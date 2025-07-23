@@ -167,8 +167,9 @@ For detailed error information, you can modify the script to include more verbos
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Author
+## Authors
 
+**Nikka Ghalili** - n@nikkag.com
 **Dima Ghalili** - dghalili@fdmattorneys.com
 
 ## Acknowledgments
