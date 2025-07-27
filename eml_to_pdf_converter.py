@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-EML to PDF Converter
+Email to PDF Converter
 
-This module provides functionality to convert .eml files to PDFs with date-based naming
+This module provides functionality to convert .eml and .msg files to PDFs with date-based naming
 following the same logic as the amdate.py script. It includes a file selector dialog
 for cross-platform directory selection.
 
@@ -17,15 +17,20 @@ import re
 import sys
 import tkinter as tk
 import unicodedata
+import warnings
 from datetime import datetime
 from email import policy
 from email.parser import Parser
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
+import extract_msg
 from bs4 import BeautifulSoup
 from fpdf import FPDF
 from playwright.async_api import async_playwright
+
+# Suppress RTFDE warnings about invalid escape sequences
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="RTFDE")
 
 
 class DirectorySelector:
@@ -58,8 +63,8 @@ class DirectorySelector:
             self.root.destroy()
 
 
-class EMLToPDFConverter:
-    """Convert EML files to PDFs with date-based naming."""
+class EmailToPDFConverter:
+    """Convert EML and MSG files to PDFs with date-based naming."""
 
     def __init__(self) -> None:
         """Initialize the converter."""
@@ -104,17 +109,81 @@ class EMLToPDFConverter:
         first_three = "_".join(words[:3]) if words else "NoName"
         return re.sub(r"[^\w_]", "", first_three)
 
-    def _parse_email_date(self, msg) -> datetime | None:
+    def _parse_msg_file(self, msg_path: Path) -> dict:
+        """
+        Parse MSG file and extract message data in a format compatible with email.parser output.
+
+        Args:
+            msg_path: Path to the MSG file
+
+        Returns:
+            dict: Message data with keys matching email.parser Message object
+        """
+        try:
+            msg = extract_msg.Message(str(msg_path))
+
+            # Create a dictionary that mimics the email.parser Message object interface
+            message_data = {
+                "Subject": msg.subject or "",
+                "From": msg.sender or "",
+                "To": msg.to or "",
+                "Date": msg.date or "",
+                "body": msg.body or "",
+                "htmlBody": msg.htmlBody or "",
+                "attachments": msg.attachments or [],
+            }
+
+            return message_data
+        except Exception as e:
+            print(f"❌ Error parsing MSG file {msg_path.name}: {e}")
+            return None
+
+    def _parse_eml_file(self, eml_path: Path) -> dict:
+        """
+        Parse EML file and extract message data in a unified format.
+
+        Args:
+            eml_path: Path to the EML file
+
+        Returns:
+            dict: Message data with keys matching email.parser Message object
+        """
+        try:
+            parser = Parser(policy=policy.default)
+            with open(eml_path, encoding="utf-8", errors="ignore") as f:
+                msg = parser.parse(f)
+
+            # Extract text and HTML content
+            text_content = self._extract_text_content(msg)
+            html_content = self._extract_html_content(msg)
+
+            # Create unified message data
+            message_data = {
+                "Subject": msg.get("Subject", ""),
+                "From": msg.get("From", ""),
+                "To": msg.get("To", ""),
+                "Date": msg.get("Date", ""),
+                "body": text_content,
+                "htmlBody": html_content,
+                "attachments": [],
+            }
+
+            return message_data
+        except Exception as e:
+            print(f"❌ Error parsing EML file {eml_path.name}: {e}")
+            return None
+
+    def _parse_email_date(self, msg_data: dict) -> datetime | None:
         """
         Parse date from email headers.
 
         Args:
-            msg: Parsed email message object
+            msg_data: Unified message data dictionary
 
         Returns:
             Optional[datetime]: Parsed datetime or None if not found
         """
-        date_header = msg.get("Date")
+        date_header = msg_data.get("Date")
         if not date_header:
             return None
 
@@ -123,21 +192,21 @@ class EMLToPDFConverter:
         except Exception:
             return None
 
-    def _extract_email_content(self, msg) -> tuple[str, str]:
+    def _extract_email_content(self, msg_data: dict) -> tuple[str, str]:
         """
         Extract and render email content similar to email client display.
 
         Args:
-            msg: Parsed email message object
+            msg_data: Unified message data dictionary
 
         Returns:
             tuple[str, str]: (Plain text content, HTML content)
         """
         # Extract email headers
-        subject = msg.get("Subject", "No Subject")
-        sender = msg.get("From", "Unknown Sender")
-        recipient = msg.get("To", "Unknown Recipient")
-        date_header = msg.get("Date", "No Date")
+        subject = msg_data.get("Subject", "No Subject")
+        sender = msg_data.get("From", "Unknown Sender")
+        recipient = msg_data.get("To", "Unknown Recipient")
+        date_header = msg_data.get("Date", "No Date")
 
         # Format headers
         header_content = f"Subject: {subject}\n"
@@ -147,8 +216,8 @@ class EMLToPDFConverter:
         header_content += "=" * 80 + "\n\n"
 
         # Extract body content
-        text_content = self._extract_text_content(msg)
-        html_content = self._extract_html_content(msg)
+        text_content = msg_data.get("body", "")
+        html_content = msg_data.get("htmlBody", "")
 
         return header_content + text_content, html_content
 
@@ -527,12 +596,12 @@ class EMLToPDFConverter:
 
         pdf.output(str(output_path))
 
-    async def convert_eml_files(self, input_directory: Path, output_directory: Path) -> None:
+    async def convert_email_files(self, input_directory: Path, output_directory: Path) -> None:
         """
-        Convert all .eml files in directory to PDFs with date-based naming.
+        Convert all .eml and .msg files in directory to PDFs with date-based naming.
 
         Args:
-            input_directory: Directory containing .eml files
+            input_directory: Directory containing .eml and .msg files
             output_directory: Directory where PDFs will be saved
         """
         if not input_directory.exists():
@@ -543,12 +612,16 @@ class EMLToPDFConverter:
         output_directory.mkdir(exist_ok=True)
         print(f"📁 Output directory: {output_directory}")
 
+        # Find both EML and MSG files
         eml_files = list(input_directory.glob("*.eml"))
-        if not eml_files:
-            print(f"⚠️ No .eml files found in {input_directory}")
+        msg_files = list(input_directory.glob("*.msg"))
+        all_files = eml_files + msg_files
+
+        if not all_files:
+            print(f"⚠️ No .eml or .msg files found in {input_directory}")
             return
 
-        print(f"📁 Found {len(eml_files)} .eml files in {input_directory}")
+        print(f"📁 Found {len(eml_files)} .eml files and {len(msg_files)} .msg files in {input_directory}")
 
         # Initialize browser for HTML rendering
         print("🚀 Initializing browser for HTML rendering...")
@@ -560,8 +633,8 @@ class EMLToPDFConverter:
 
             # Create tasks for concurrent processing
             tasks = []
-            for eml_path in eml_files:
-                task = self._process_single_eml_file_async(eml_path, output_directory, semaphore)
+            for file_path in all_files:
+                task = self._process_single_email_file_async(file_path, output_directory, semaphore)
                 tasks.append(task)
 
             # Wait for all tasks to complete
@@ -572,62 +645,69 @@ class EMLToPDFConverter:
             print("🧹 Cleaning up browser resources...")
             await self._cleanup_browser()
 
-    async def _process_single_eml_file_async(
-        self, eml_path: Path, output_directory: Path, semaphore: asyncio.Semaphore
+    async def _process_single_email_file_async(
+        self, file_path: Path, output_directory: Path, semaphore: asyncio.Semaphore
     ) -> None:
         """
-        Process a single EML file and convert it to PDF (async version with semaphore).
+        Process a single EML or MSG file and convert it to PDF (async version with semaphore).
 
         Args:
-            eml_path: Path to the EML file
+            file_path: Path to the EML or MSG file
             output_directory: Directory where PDF will be saved
             semaphore: Semaphore to limit concurrency
         """
         async with semaphore:
             try:
-                await self._process_single_eml_file_async_internal(eml_path, output_directory)
+                await self._process_single_email_file_async_internal(file_path, output_directory)
             except Exception as e:
-                print(f"❌ Error processing {eml_path.name}: {e}")
-                self.failed_files.append(eml_path.name)
+                print(f"❌ Error processing {file_path.name}: {e}")
+                self.failed_files.append(file_path.name)
 
-    async def _process_single_eml_file_async_internal(self, eml_path: Path, output_directory: Path) -> None:
+    async def _process_single_email_file_async_internal(self, file_path: Path, output_directory: Path) -> None:
         """
-        Internal async method to process a single EML file.
+        Internal async method to process a single EML or MSG file.
 
         Args:
-            eml_path: Path to the EML file
+            file_path: Path to the EML or MSG file
             output_directory: Directory where PDF will be saved
         """
-        print(f"\n📄 Processing: {eml_path.name}")
+        print(f"\n📄 Processing: {file_path.name}")
 
-        # Extract filename prefix
-        base_name = eml_path.stem
-        prefix = self._extract_filename_prefix(base_name)
-
-        # Parse EML file
-        parser = Parser(policy=policy.default)
-        with open(eml_path, encoding="utf-8", errors="ignore") as f:
-            msg = parser.parse(f)
+        # Determine file type and parse accordingly
+        if file_path.name.endswith(".msg"):
+            msg_data = self._parse_msg_file(file_path)
+            if not msg_data:
+                print(f"⚠️ Failed to parse MSG file {file_path.name}")
+                self.failed_files.append(file_path.name)
+                return
+        else:  # .eml
+            msg_data = self._parse_eml_file(file_path)
+            if not msg_data:
+                print(f"⚠️ Failed to parse EML file {file_path.name}")
+                self.failed_files.append(file_path.name)
+                return
 
         # Extract and parse date
-        date_obj = self._parse_email_date(msg)
+        date_obj = self._parse_email_date(msg_data)
         if not date_obj:
-            print(f"⚠️ No valid date found in: {eml_path.name}")
-            self.failed_files.append(eml_path.name)
+            print(f"⚠️ No valid date found in: {file_path.name}")
+            self.failed_files.append(file_path.name)
             return
 
         print(f"📅 Found date: {date_obj}")
 
         # Extract email content
-        subject = msg.get("Subject", "No Subject")
-        sender = msg.get("From", "Unknown Sender")
-        recipient = msg.get("To", "Unknown Recipient")
-        date_header = msg.get("Date", "No Date")
+        subject = msg_data.get("Subject", "No Subject")
+        sender = msg_data.get("From", "Unknown Sender")
+        recipient = msg_data.get("To", "Unknown Recipient")
+        date_header = msg_data.get("Date", "No Date")
 
-        text_content, html_content = self._extract_email_content(msg)
+        text_content, html_content = self._extract_email_content(msg_data)
 
         # Generate PDF filename and path
-        pdf_path = self._generate_pdf_filename(date_obj, prefix, output_directory)
+        pdf_path = self._generate_pdf_filename(
+            date_obj, self._extract_filename_prefix(file_path.stem), output_directory
+        )
 
         # Create PDF
         if html_content:
@@ -655,8 +735,8 @@ class EMLToPDFConverter:
 
 
 async def main() -> None:
-    """Main function to run the EML to PDF converter."""
-    print("📧 EML to PDF Converter")
+    """Main function to run the Email to PDF converter."""
+    print("📧 Email to PDF Converter")
     print("=" * 50)
 
     # Check for headless flag
@@ -693,8 +773,8 @@ async def main() -> None:
     print(f"📁 Input directory: {input_directory}")
 
     # Convert files
-    converter = EMLToPDFConverter()
-    await converter.convert_eml_files(input_directory, output_directory)
+    converter = EmailToPDFConverter()
+    await converter.convert_email_files(input_directory, output_directory)
     converter.print_summary()
 
 

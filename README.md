@@ -1,10 +1,11 @@
-# EML to PDF Converter
+# Email to PDF Converter
 
-A modern Python script that converts `.eml` files to PDFs with date-based naming, following the same logic as the `amdate.py` script. Features a cross-platform file selector dialog and proper dependency management.
+A modern Python script that converts `.eml` and `.msg` files to PDFs with date-based naming, following the same logic as the `amdate.py` script. Features a cross-platform file selector dialog and proper dependency management.
 
 ## Features
 
 - **Cross-platform directory selection**: Works on both macOS and Windows
+- **Multi-format support**: Handles both EML and MSG (Outlook) email files
 - **Date-based naming**: Uses email headers to extract dates and create organized filenames
 - **Conflict resolution**: Automatically handles filename conflicts by adding counters
 - **Modern Python practices**: Type hints, comprehensive error handling, and modular design
@@ -46,8 +47,8 @@ python eml_to_pdf_converter.py
 ## Usage
 
 1. Run the script: `python eml_to_pdf_converter.py`
-2. A file dialog will open - select the directory containing your `.eml` files
-3. The script will process all `.eml` files and convert them to PDFs
+2. A file dialog will open - select the directory containing your `.eml` and `.msg` files
+3. The script will process all email files and convert them to PDFs
 4. A summary will be displayed showing successful conversions and any failures
 
 ## Naming Convention
@@ -60,7 +61,7 @@ The script follows the same naming logic as `amdate.py`:
 
 ### Filename Logic
 
-1. Extract the first 3 words from the original `.eml` filename
+1. Extract the first 3 words from the original email filename (`.eml` or `.msg`)
 2. Sanitize the words (remove special characters)
 3. Combine with the email date in `YYYY-MM-DD` format
 4. Add `_Email_` prefix to indicate the source
@@ -79,6 +80,9 @@ eml-to-pdf-converter/
 ## Dependencies
 
 - **fpdf**: PDF generation library
+- **extract-msg**: MSG file parsing library
+- **beautifulsoup4**: HTML parsing and cleaning
+- **playwright**: Browser automation for HTML rendering
 - **tkinter**: Built-in GUI library for file dialogs
 - **email**: Built-in email parsing library
 

@@ -1,7 +1,7 @@
 [project]
 name = "eml-to-pdf-converter"
 version = "0.1.0"
-description = "Convert EML files to PDFs with date-based naming"
+description = "Convert EML and MSG files to PDFs with date-based naming"
 authors = [
     {name = "Nikka Ghalili", email = "n@nikkag.com"},
     {name = "Dima Ghalili", email = "dghalili@fdmattorneys.com"}
@@ -12,6 +12,7 @@ dependencies = [
     "fpdf>=1.7.2",
     "beautifulsoup4>=4.12.0",
     "playwright>=1.40.0",
+    "extract-msg>=0.54.1",
 ]
 
 [project.optional-dependencies]
