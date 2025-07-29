@@ -203,11 +203,11 @@ class EmailToPDFConverter:
         Returns:
             tuple[str, str]: (Plain text content, HTML content)
         """
-        # Extract email headers
-        subject = msg_data.get("Subject", "No Subject")
-        sender = msg_data.get("From", "Unknown Sender")
-        recipient = msg_data.get("To", "Unknown Recipient")
-        date_header = msg_data.get("Date", "No Date")
+        # Extract email headers with proper None handling
+        subject = msg_data.get("Subject") or "No Subject"
+        sender = msg_data.get("From") or "Unknown Sender"
+        recipient = msg_data.get("To") or "Unknown Recipient"
+        date_header = msg_data.get("Date") or "No Date"
 
         # Format headers
         header_content = f"Subject: {subject}\n"
@@ -217,8 +217,8 @@ class EmailToPDFConverter:
         header_content += "=" * 80 + "\n\n"
 
         # Extract body content
-        text_content = msg_data.get("body", "")
-        html_content = msg_data.get("htmlBody", "")
+        text_content = msg_data.get("body") or ""
+        html_content = msg_data.get("htmlBody") or ""
 
         return header_content + text_content, html_content
 
@@ -580,7 +580,7 @@ class EmailToPDFConverter:
                                 content_cleaned += normalized
                             else:
                                 content_cleaned += "?"  # Replace with question mark
-                        except:
+                        except Exception:
                             content_cleaned += "?"  # Replace with question mark
                 else:
                     content_cleaned += char
