@@ -33,11 +33,17 @@
 
 5. **Build the executable**
    ```cmd
-   # Using uv (recommended)
-   uv run pyinstaller --onefile --windowed --name "EmailToPDFConverter" eml_to_pdf_converter.py
+   # Using the build script (recommended)
+   uv run python build_executable.py
 
-   # Or using pip
-   pyinstaller --onefile --windowed --name "EmailToPDFConverter" eml_to_pdf_converter.py
+   # Or using spec file
+   uv run pyinstaller EmailToPDFConverter.spec
+
+   # Or manual build
+   uv run pyinstaller --onefile --windowed --name "EmailToPDFConverter" \
+     --additional-hooks-dir hooks \
+     --runtime-hook hooks/runtime-hook-playwright.py \
+     eml_to_pdf_converter.py
    ```
 
 6. **Copy the executable back to Mac**

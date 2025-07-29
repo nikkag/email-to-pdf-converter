@@ -140,19 +140,38 @@ uv run mypy eml_to_pdf_converter.py
 
 ### Building Executables
 
+#### Using the Build Script (Recommended)
+
 ```bash
 # Install build dependencies
 uv sync --dev
 uv sync --group build
 
-# Build Windows executable
-uv run pyinstaller --onefile --windowed --name "EmailToPDFConverter" eml_to_pdf_converter.py
-
-# Build Linux/macOS executable
-uv run pyinstaller --onefile --name "EmailToPDFConverter" eml_to_pdf_converter.py
+# Run the build script
+uv run python build_executable.py
 ```
 
-**Note**: The built executable will include all dependencies including Playwright browsers, so users don't need to install them separately.
+#### Manual Build
+
+```bash
+# Install build dependencies
+uv sync --dev
+uv sync --group build
+
+# Install Playwright browsers
+uv run python -m playwright install chromium
+
+# Build using spec file (includes Playwright browsers)
+uv run pyinstaller EmailToPDFConverter.spec
+
+# Or build manually with hooks
+uv run pyinstaller --onefile --windowed --name "EmailToPDFConverter" \
+  --additional-hooks-dir hooks \
+  --runtime-hook hooks/runtime-hook-playwright.py \
+  eml_to_pdf_converter.py
+```
+
+**Note**: The built executable will include all dependencies including Playwright browsers, so users don't need to install them separately. The executable should be around 100-150 MB when Playwright browsers are properly included.
 
 ## Error Handling
 

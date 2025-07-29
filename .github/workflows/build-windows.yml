@@ -32,9 +32,9 @@ jobs:
       run: |
         uv run python -m playwright install chromium
 
-    - name: Build executable
+    - name: Build executable using build script
       run: |
-        uv run pyinstaller --onefile --windowed --name "EmailToPDFConverter" eml_to_pdf_converter.py
+        uv run python build_executable.py
 
     - name: Upload executable
       uses: actions/upload-artifact@v4
