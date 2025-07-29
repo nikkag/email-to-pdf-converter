@@ -50,7 +50,7 @@ def build_executable():
             "-m",
             "PyInstaller",
             "--onefile",
-            "--windowed",
+            "--console",  # Use console mode for debugging
             "--name",
             "EmailToPDFConverter",
             "--additional-hooks-dir",
