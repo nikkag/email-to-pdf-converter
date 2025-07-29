@@ -6,6 +6,7 @@ A modern Python script that converts `.eml` and `.msg` files to PDFs with date-b
 
 - **Cross-platform directory selection**: Works on both macOS and Windows
 - **Multi-format support**: Handles both EML and MSG (Outlook) email files
+- **HTML rendering**: Uses Playwright to render HTML emails as they appear in email clients
 - **Date-based naming**: Uses email headers to extract dates and create organized filenames
 - **Conflict resolution**: Automatically handles filename conflicts by adding counters
 - **Modern Python practices**: Type hints, comprehensive error handling, and modular design
@@ -30,6 +31,9 @@ cd eml-to-pdf-converter
 # Install dependencies
 uv sync
 
+# Install Playwright browsers (required for HTML rendering)
+uv run python -m playwright install chromium
+
 # Run the script
 uv run python eml_to_pdf_converter.py
 ```
@@ -39,6 +43,9 @@ uv run python eml_to_pdf_converter.py
 ```bash
 # Install dependencies
 pip install -r requirements.txt
+
+# Install Playwright browsers (required for HTML rendering)
+python -m playwright install chromium
 
 # Run the script
 python eml_to_pdf_converter.py
@@ -50,6 +57,14 @@ python eml_to_pdf_converter.py
 2. A file dialog will open - select the directory containing your `.eml` and `.msg` files
 3. The script will process all email files and convert them to PDFs
 4. A summary will be displayed showing successful conversions and any failures
+
+### HTML Rendering
+
+The script uses Playwright to render HTML emails exactly as they appear in email clients:
+- **HTML emails**: Rendered with proper styling, images, and formatting
+- **Text emails**: Converted to clean, readable text
+- **Fallback**: If browser rendering fails, falls back to text-only PDFs
+- **Performance**: Concurrent processing with up to 50 simultaneous conversions
 
 ## Naming Convention
 
@@ -82,9 +97,11 @@ eml-to-pdf-converter/
 - **fpdf**: PDF generation library
 - **extract-msg**: MSG file parsing library
 - **beautifulsoup4**: HTML parsing and cleaning
-- **playwright**: Browser automation for HTML rendering
+- **playwright**: Browser automation for HTML rendering (requires Chromium browser)
 - **tkinter**: Built-in GUI library for file dialogs
 - **email**: Built-in email parsing library
+
+**Note**: Playwright requires the Chromium browser to be installed separately. This is done automatically during installation, but you can manually install it with `python -m playwright install chromium`.
 
 ## Development
 
@@ -100,7 +117,10 @@ The project uses modern Python development tools:
 
 ```bash
 # Install development dependencies
-uv sync --extra dev
+uv sync --dev
+
+# Install Playwright browsers (required for tests)
+uv run python -m playwright install chromium
 
 # Run tests
 uv run pytest
@@ -117,6 +137,22 @@ uv run ruff check .
 ```bash
 uv run mypy eml_to_pdf_converter.py
 ```
+
+### Building Executables
+
+```bash
+# Install build dependencies
+uv sync --dev
+uv sync --group build
+
+# Build Windows executable
+uv run pyinstaller --onefile --windowed --name "EmailToPDFConverter" eml_to_pdf_converter.py
+
+# Build Linux/macOS executable
+uv run pyinstaller --onefile --name "EmailToPDFConverter" eml_to_pdf_converter.py
+```
+
+**Note**: The built executable will include all dependencies including Playwright browsers, so users don't need to install them separately.
 
 ## Error Handling
 
@@ -154,6 +190,8 @@ emails/
 2. **Date parsing errors**: Some emails may have malformed date headers
 3. **Permission errors**: Ensure you have write permissions in the target directory
 4. **GUI not appearing**: On some systems, you may need to run with a display server
+5. **HTML rendering issues**: Ensure Playwright browsers are installed with `python -m playwright install chromium`
+6. **Browser initialization fails**: The script will fall back to text-only PDFs if browser rendering fails
 
 ### Debug Mode
 

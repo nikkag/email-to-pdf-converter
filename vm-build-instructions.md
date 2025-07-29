@@ -18,16 +18,29 @@
 
 3. **Install dependencies**
    ```cmd
+   # Install uv (recommended)
+   pip install uv
+
+   # Or install with pip
    pip install pyinstaller
    pip install -r requirements.txt
    ```
 
-4. **Build the executable**
+4. **Install Playwright browsers (required for HTML rendering)**
    ```cmd
+   python -m playwright install chromium
+   ```
+
+5. **Build the executable**
+   ```cmd
+   # Using uv (recommended)
+   uv run pyinstaller --onefile --windowed --name "EmailToPDFConverter" eml_to_pdf_converter.py
+
+   # Or using pip
    pyinstaller --onefile --windowed --name "EmailToPDFConverter" eml_to_pdf_converter.py
    ```
 
-5. **Copy the executable back to Mac**
+6. **Copy the executable back to Mac**
    - The executable will be in the `dist/` folder
    - Copy it to your Mac via shared folders
 
