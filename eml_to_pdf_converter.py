@@ -76,13 +76,10 @@ class EmailToPDFConverter:
     async def _initialize_browser(self) -> None:
         """Initialize the browser instance for HTML rendering."""
         try:
-            print("Starting Playwright...")
             self.playwright = await async_playwright().start()
-            print("Launching Chromium browser...")
 
             # Try to launch with explicit executable path if in bundle
             if getattr(sys, "frozen", False):
-                print("Running in bundle, checking for bundled browsers...")
                 bundle_dir = Path(sys._MEIPASS)
                 chromium_exe = bundle_dir / "chromium-1181" / "chrome.exe"
                 if chromium_exe.exists():
@@ -91,20 +88,15 @@ class EmailToPDFConverter:
                         self.browser = await self.playwright.chromium.launch(
                             headless=True, executable_path=str(chromium_exe)
                         )
-                    except Exception as bundled_error:
-                        print(f"Failed to launch bundled browser: {bundled_error}")
-                        print("Trying default browser...")
+                    except Exception:
                         self.browser = await self.playwright.chromium.launch(headless=True)
                 else:
-                    print("No bundled Chromium executable found, using default")
                     self.browser = await self.playwright.chromium.launch(headless=True)
             else:
                 self.browser = await self.playwright.chromium.launch(headless=True)
 
-            print("Browser initialized successfully")
         except Exception as e:
             print(f"Failed to initialize browser: {e}")
-            print(f"Browser type: {type(self.browser) if self.browser else 'None'}")
             self.browser = None
 
     async def _cleanup_browser(self) -> None:
@@ -546,21 +538,15 @@ class EmailToPDFConverter:
             output_path: Path where PDF should be saved
         """
         if not self.browser:
-            print("Browser not initialized, falling back to text-based PDF")
             self._create_text_pdf(html_content, output_path)
             return
 
         try:
-            print("Creating new browser page...")
             # Create a new page in the existing browser
             page = await self.browser.new_page()
-            print("Setting HTML content...")
             await page.set_content(html_content)
-            print("Generating PDF...")
             await page.pdf(path=str(output_path), format="A4")
-            print("Closing page...")
             await page.close()
-            print("HTML PDF created successfully")
         except Exception as e:
             print(f"HTML rendering failed: {e}")
             print(f"Error type: {type(e)}")
