@@ -17,7 +17,17 @@ if playwright_browsers_path and os.path.exists(playwright_browsers_path):
     for browser_dir in os.listdir(playwright_browsers_path):
         browser_path = os.path.join(playwright_browsers_path, browser_dir)
         if os.path.isdir(browser_path):
+            # Include the entire browser directory
             datas.append((browser_path, browser_dir))
+
+            # Also include individual browser files for better compatibility
+            for root, dirs, files in os.walk(browser_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    # Calculate relative path from browser_path
+                    rel_path = os.path.relpath(file_path, browser_path)
+                    target_path = os.path.join(browser_dir, rel_path)
+                    datas.append((file_path, os.path.dirname(target_path)))
 
 a = Analysis(
     ['eml_to_pdf_converter.py'],

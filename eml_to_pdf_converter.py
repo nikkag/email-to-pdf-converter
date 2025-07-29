@@ -79,7 +79,28 @@ class EmailToPDFConverter:
             print("Starting Playwright...")
             self.playwright = await async_playwright().start()
             print("Launching Chromium browser...")
-            self.browser = await self.playwright.chromium.launch(headless=True)
+
+            # Try to launch with explicit executable path if in bundle
+            if getattr(sys, "frozen", False):
+                print("Running in bundle, checking for bundled browsers...")
+                bundle_dir = Path(sys._MEIPASS)
+                chromium_exe = bundle_dir / "chromium-1181" / "chrome.exe"
+                if chromium_exe.exists():
+                    print(f"Found bundled Chromium at: {chromium_exe}")
+                    try:
+                        self.browser = await self.playwright.chromium.launch(
+                            headless=True, executable_path=str(chromium_exe)
+                        )
+                    except Exception as bundled_error:
+                        print(f"Failed to launch bundled browser: {bundled_error}")
+                        print("Trying default browser...")
+                        self.browser = await self.playwright.chromium.launch(headless=True)
+                else:
+                    print("No bundled Chromium executable found, using default")
+                    self.browser = await self.playwright.chromium.launch(headless=True)
+            else:
+                self.browser = await self.playwright.chromium.launch(headless=True)
+
             print("Browser initialized successfully")
         except Exception as e:
             print(f"Failed to initialize browser: {e}")

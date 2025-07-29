@@ -24,8 +24,19 @@ def setup_playwright_browsers():
                 print(f"Found Playwright browsers at: {browser_dir}")
                 break
         else:
-            print("Warning: No Playwright browsers found in bundle")
-            print(f"Available directories: {list(bundle_dir.iterdir())}")
+            # If no browser directory found, try to find individual browser files
+            print("No Playwright browser directories found, looking for individual files...")
+
+            # Look for chromium-related files
+            chromium_files = list(bundle_dir.glob("chromium*"))
+            if chromium_files:
+                print(f"Found Chromium files: {chromium_files}")
+                # Set the bundle directory as the browsers path
+                os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(bundle_dir)
+                print(f"Set PLAYWRIGHT_BROWSERS_PATH to: {bundle_dir}")
+            else:
+                print("Warning: No Playwright browsers found in bundle")
+                print(f"Available directories: {list(bundle_dir.iterdir())}")
 
 
 # Set up browsers when module is imported
