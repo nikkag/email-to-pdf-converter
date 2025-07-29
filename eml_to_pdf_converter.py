@@ -127,7 +127,7 @@ class EmailToPDFConverter:
                 "Subject": msg.subject or "",
                 "From": msg.sender or "",
                 "To": msg.to or "",
-                "Date": msg.date or "",
+                "Date": msg.date or None,
                 "body": msg.body or "",
                 "htmlBody": msg.htmlBody or "",
                 "attachments": msg.attachments or [],
@@ -184,8 +184,9 @@ class EmailToPDFConverter:
             Optional[datetime]: Parsed datetime or None if not found
         """
         date_header = msg_data.get("Date")
-        if not date_header:
-            return None
+
+        if isinstance(date_header, datetime) or not date_header:
+            return date_header
 
         try:
             return parsedate_to_datetime(date_header)
