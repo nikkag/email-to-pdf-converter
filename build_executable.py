@@ -24,7 +24,7 @@ def find_playwright_browsers():
 
 def install_playwright_browsers():
     """Install Playwright browsers if not already installed."""
-    print("🔧 Installing Playwright browsers...")
+    print("Installing Playwright browsers...")
     try:
         subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True, capture_output=True)
         print("Playwright browsers installed successfully")
@@ -36,15 +36,15 @@ def install_playwright_browsers():
 
 def build_executable():
     """Build the executable using PyInstaller."""
-    print("🔧 Building executable...")
+    print("Building executable...")
 
     # Check if spec file exists
     spec_file = Path("EmailToPDFConverter.spec")
     if spec_file.exists():
-        print("📋 Using existing spec file")
+        print("Using existing spec file")
         cmd = [sys.executable, "-m", "PyInstaller", "EmailToPDFConverter.spec"]
     else:
-        print("📋 Creating new build with Playwright support")
+        print("Creating new build with Playwright support")
         cmd = [
             sys.executable,
             "-m",
